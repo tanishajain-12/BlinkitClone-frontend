@@ -1,12 +1,48 @@
 import { useState, useEffect } from "react";
-import { ChevronRight, Zap } from "lucide-react";
-import { categories, products, banners } from "../data/products";
+import { ChevronRight, Zap, RefreshCw } from "lucide-react";
+import { categories, banners } from "../data/products";  // UI-only static data kept
+import { getProducts } from "../api/productService.js";
 import ProductCard from "../components/ProductCard";
 
-export default function HomePage({ onNavigate }) {
-  const [activeBanner, setActiveBanner] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+// ─── Skeleton loader for product grid ────────────────────────────────────────
+function ProductSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden animate-pulse">
+      <div className="bg-gray-200" style={{ paddingBottom: "100%" }} />
+      <div className="p-3 space-y-2">
+        <div className="h-3 bg-gray-200 rounded w-1/2" />
+        <div className="h-4 bg-gray-200 rounded w-3/4" />
+        <div className="h-3 bg-gray-200 rounded w-1/3" />
+      </div>
+    </div>
+  );
+}
 
+export default function HomePage({ onNavigate }) {
+  const [activeBanner,    setActiveBanner]    = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [products,        setProducts]        = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [error,           setError]           = useState("");
+
+  // ── Fetch all products from the backend ─────────────────────────────────
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const { data } = await getProducts({ limit: 20, sort: "price_asc" });
+        setProducts(data.data || []);
+      } catch {
+        setError("Could not load products. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // ── Banner auto-rotation ─────────────────────────────────────────────────
   useEffect(() => {
     const timer = setInterval(() => {
       setIsTransitioning(true);
@@ -18,8 +54,42 @@ export default function HomePage({ onNavigate }) {
     return () => clearInterval(timer);
   }, []);
 
+  // Featured = first 8, deals = products with stock > 0 (no mrp in backend, just show all)
   const featuredProducts = products.slice(0, 8);
-  const deals = products.filter(p => p.mrp > p.price).slice(0, 6);
+  const popularProducts  = products.slice(0, 10);
+
+  const renderGrid = (items) => {
+    if (loading) {
+      return (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => <ProductSkeleton key={i} />)}
+        </div>
+      );
+    }
+    if (error) {
+      return (
+        <div className="flex flex-col items-center gap-3 py-10">
+          <p className="text-sm text-red-500 font-semibold">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-2 text-sm text-green-600 font-semibold hover:underline"
+          >
+            <RefreshCw size={14} /> Retry
+          </button>
+        </div>
+      );
+    }
+    if (items.length === 0) {
+      return <p className="text-sm text-gray-400 text-center py-8">No products available right now.</p>;
+    }
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        {items.map(product => (
+          <ProductCard key={product.id} product={product} onProductClick={p => onNavigate("product", p)} />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-8 pb-24 lg:pb-8">
@@ -77,7 +147,7 @@ export default function HomePage({ onNavigate }) {
         ))}
       </div>
 
-      {/* Categories */}
+      {/* Categories — static UI data, no API needed */}
       <section className="px-4 lg:px-0">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-black text-gray-900">Shop by Category</h2>
@@ -105,25 +175,21 @@ export default function HomePage({ onNavigate }) {
         </div>
       </section>
 
-      {/* Best Deals */}
+      {/* Featured Products — from backend */}
       <section className="px-4 lg:px-0">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl font-black text-gray-900">Best Deals 🔥</h2>
             <p className="text-xs text-gray-500 mt-0.5">Save more on these products</p>
           </div>
-          <button className="text-green-600 text-sm font-semibold flex items-center gap-1 hover:gap-2 transition-all">
+          <button onClick={() => onNavigate("categories")} className="text-green-600 text-sm font-semibold flex items-center gap-1 hover:gap-2 transition-all">
             See all <ChevronRight size={15} />
           </button>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {deals.map(product => (
-            <ProductCard key={product.id} product={product} onProductClick={p => onNavigate("product", p)} />
-          ))}
-        </div>
+        {renderGrid(featuredProducts)}
       </section>
 
-      {/* Featured Products */}
+      {/* Popular Products — from backend */}
       <section className="px-4 lg:px-0">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -131,11 +197,7 @@ export default function HomePage({ onNavigate }) {
             <p className="text-xs text-gray-500 mt-0.5">Trending in your area</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          {featuredProducts.map(product => (
-            <ProductCard key={product.id} product={product} onProductClick={p => onNavigate("product", p)} />
-          ))}
-        </div>
+        {renderGrid(popularProducts)}
       </section>
 
       {/* Why Blinkit */}
