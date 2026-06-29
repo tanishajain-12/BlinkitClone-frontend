@@ -2,6 +2,11 @@
 // By the time this module is evaluated, all env vars are already populated.
 import { Sequelize } from "sequelize";
 
+console.log("DB_HOST:", process.env.DB_HOST);
+console.log("DB_PORT:", process.env.DB_PORT);
+console.log("DB_NAME:", process.env.DB_NAME);
+console.log("DB_USER:", process.env.DB_USER);
+
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
