@@ -1,11 +1,40 @@
-import { ShoppingCart, Trash2, Tag, Clock, ArrowRight } from "lucide-react";
+import { ShoppingCart, Trash2, Tag, Clock, ArrowRight, RefreshCw, Loader2 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 
-export default function CartPage({ onNavigate }) {
-  const { items, total, count, updateQuantity, removeFromCart } = useCart();
-  const platformFee = 3;
-  const grandTotal = total + platformFee;
+const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
 
+function resolveImage(img) {
+  if (!img) return "https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg?auto=compress&cs=tinysrgb&w=200";
+  if (img.startsWith("http")) return img;
+  return `${BASE_URL}${img}`;
+}
+
+export default function CartPage({ onNavigate }) {
+  const {
+    items,
+    total,
+    count,
+    cartLoading,
+    updateQuantity,
+    removeFromCart,
+    clearCart,
+    fetchCart,
+  } = useCart();
+
+  const platformFee = 3;
+  const grandTotal  = parseFloat((total + platformFee).toFixed(2));
+
+  // ── Loading state ──────────────────────────────────────────────────────────
+  if (cartLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <Loader2 size={36} className="text-green-500 animate-spin" />
+        <p className="text-gray-500 font-medium">Loading your cart…</p>
+      </div>
+    );
+  }
+
+  // ── Empty cart ─────────────────────────────────────────────────────────────
   if (count === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 gap-5">
@@ -16,18 +45,28 @@ export default function CartPage({ onNavigate }) {
           <h2 className="text-xl font-black text-gray-900">Your cart is empty</h2>
           <p className="text-gray-500 mt-1 text-sm">Add items to start a new order</p>
         </div>
-        <button
-          onClick={() => onNavigate("home")}
-          className="bg-green-500 text-white px-8 py-3 rounded-2xl font-bold hover:bg-green-600 transition-colors"
-        >
-          Start Shopping
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => onNavigate("home")}
+            className="bg-green-500 text-white px-8 py-3 rounded-2xl font-bold hover:bg-green-600 transition-colors"
+          >
+            Start Shopping
+          </button>
+          <button
+            onClick={fetchCart}
+            className="flex items-center gap-2 bg-gray-100 text-gray-600 px-4 py-3 rounded-2xl font-semibold hover:bg-gray-200 transition-colors text-sm"
+          >
+            <RefreshCw size={14} /> Refresh
+          </button>
+        </div>
       </div>
     );
   }
 
+  // ── Cart with items ────────────────────────────────────────────────────────
   return (
     <div className="pb-24 lg:pb-8 px-4 lg:px-0 pt-4">
+      {/* Delivery promise banner */}
       <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center gap-3 mb-4">
         <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
           <Clock size={20} className="text-white" />
@@ -39,52 +78,80 @@ export default function CartPage({ onNavigate }) {
       </div>
 
       <div className="lg:grid lg:grid-cols-3 lg:gap-6">
+        {/* Cart items list */}
         <div className="lg:col-span-2 space-y-1">
-          <h2 className="font-black text-lg text-gray-900 mb-3">{count} Item{count !== 1 ? "s" : ""} in Cart</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-black text-lg text-gray-900">
+              {count} Item{count !== 1 ? "s" : ""} in Cart
+            </h2>
+            <button
+              onClick={clearCart}
+              className="text-xs text-red-400 hover:text-red-600 font-semibold transition-colors"
+            >
+              Clear All
+            </button>
+          </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
             {items.map(item => (
-              <div key={item.id} className="flex items-center gap-3 p-4">
+              <div key={item.itemId} className="flex items-center gap-3 p-4">
                 <img
-                  src={item.image}
+                  src={resolveImage(item.image)}
                   alt={item.name}
                   className="w-16 h-16 object-cover rounded-xl bg-gray-100 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
-                  onClick={() => onNavigate("product", item)}
+                  onClick={() => onNavigate("product", { id: item.id, name: item.name })}
+                  onError={e => { e.target.src = "https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg?auto=compress&cs=tinysrgb&w=200"; }}
                 />
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 text-sm leading-tight cursor-pointer hover:text-green-600" onClick={() => onNavigate("product", item)}>
+                  <h3
+                    className="font-semibold text-gray-900 text-sm leading-tight cursor-pointer hover:text-green-600 transition-colors"
+                    onClick={() => onNavigate("product", { id: item.id, name: item.name })}
+                  >
                     {item.name}
                   </h3>
-                  <p className="text-xs text-gray-400 mt-0.5">{item.unit}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm font-bold text-gray-900">₹{item.price}</span>
-                    {item.mrp > item.price && (
-                      <span className="text-xs text-gray-400 line-through">₹{item.mrp}</span>
-                    )}
-                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">{item.category}</p>
+                  <span className="text-sm font-bold text-gray-900 mt-1 block">₹{item.price}</span>
                 </div>
 
                 <div className="flex flex-col items-end gap-2">
-                  <button onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                  {/* Remove button */}
+                  <button
+                    onClick={() => removeFromCart(item.id)}
+                    className="text-gray-400 hover:text-red-500 transition-colors"
+                    aria-label="Remove item"
+                  >
                     <Trash2 size={15} />
                   </button>
+
+                  {/* Quantity control — uses product id */}
                   <div className="flex items-center gap-1.5 bg-green-500 rounded-lg overflow-hidden">
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
                       className="w-7 h-7 flex items-center justify-center text-white hover:bg-green-600 transition-colors font-bold text-sm"
-                    >−</button>
-                    <span className="text-white font-bold text-sm w-5 text-center">{item.quantity}</span>
+                    >
+                      −
+                    </button>
+                    <span className="text-white font-bold text-sm w-5 text-center">
+                      {item.quantity}
+                    </span>
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="w-7 h-7 flex items-center justify-center text-white hover:bg-green-600 transition-colors font-bold text-sm"
-                    >+</button>
+                      disabled={item.quantity >= item.stock}
+                      className="w-7 h-7 flex items-center justify-center text-white hover:bg-green-600 transition-colors font-bold text-sm disabled:opacity-40"
+                    >
+                      +
+                    </button>
                   </div>
-                  <span className="text-sm font-bold text-gray-800">₹{item.price * item.quantity}</span>
+
+                  <span className="text-sm font-bold text-gray-800">
+                    ₹{(item.price * item.quantity).toFixed(2)}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
 
+          {/* Coupon placeholder */}
           <div className="bg-white rounded-2xl border border-gray-100 p-4 mt-3">
             <div className="flex items-center gap-3">
               <Tag size={18} className="text-green-600" />
@@ -94,6 +161,7 @@ export default function CartPage({ onNavigate }) {
           </div>
         </div>
 
+        {/* Bill summary */}
         <div className="mt-4 lg:mt-0">
           <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
             <h3 className="font-bold text-gray-900">Bill Details</h3>
@@ -117,11 +185,6 @@ export default function CartPage({ onNavigate }) {
             <div className="border-t border-gray-100 pt-3 flex justify-between font-black text-gray-900">
               <span>Grand Total</span>
               <span>₹{grandTotal}</span>
-            </div>
-            <div className="bg-green-50 rounded-xl p-3 text-center">
-              <p className="text-sm text-green-700 font-semibold">
-                🎉 You save ₹{items.reduce((acc, i) => acc + (i.mrp - i.price) * i.quantity, 0) + 25} on this order!
-              </p>
             </div>
           </div>
 

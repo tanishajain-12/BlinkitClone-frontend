@@ -59,12 +59,17 @@ export function CartSidebarDesktop({ onNavigate }) {
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {items.map(item => (
-              <div key={item.id} className="flex items-center gap-3">
-                <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-lg bg-gray-100" />
+              <div key={item.itemId} className="flex items-center gap-3">
+                <img
+                  src={item.image?.startsWith("http") ? item.image : `${import.meta.env.VITE_BASE_URL || "http://localhost:5000"}${item.image || ""}`}
+                  alt={item.name}
+                  className="w-12 h-12 object-cover rounded-lg bg-gray-100"
+                  onError={e => { e.target.src = "https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg?auto=compress&cs=tinysrgb&w=100"; }}
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-800 truncate">{item.name}</p>
-                  <p className="text-xs text-gray-400">{item.unit}</p>
-                  <p className="text-sm font-bold text-gray-800">₹{item.price * item.quantity}</p>
+                  <p className="text-xs text-gray-400">{item.category}</p>
+                  <p className="text-sm font-bold text-gray-800">₹{(item.price * item.quantity).toFixed(2)}</p>
                 </div>
                 <div className="flex items-center gap-1 bg-green-500 rounded-lg overflow-hidden">
                   <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-6 h-6 flex items-center justify-center text-white hover:bg-green-600 text-xs font-bold">−</button>

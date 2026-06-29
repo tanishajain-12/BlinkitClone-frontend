@@ -11,13 +11,14 @@ import ProductPage from "./pages/ProductPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import OrdersPage from "./pages/OrdersPage";
+import OrderDetailPage from "./pages/OrderDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 import SearchPage from "./pages/SearchPage";
 import LoginPage from "./pages/LoginPage";
 import { Home, Grid, Package, User } from "lucide-react";
 
 // Pages that require the user to be logged in
-const PROTECTED_PAGES = ["cart", "checkout", "orders", "profile"];
+const PROTECTED_PAGES = ["cart", "checkout", "orders", "order-detail", "profile"];
 
 function AppContent() {
   const { isLoggedIn } = useAuth();
@@ -81,7 +82,8 @@ function AppContent() {
           {currentPage === "product"    && pageData && <ProductPage product={pageData} onNavigate={navigate} />}
           {currentPage === "cart"       && <CartPage     onNavigate={navigate} />}
           {currentPage === "checkout"   && <CheckoutPage onNavigate={navigate} />}
-          {currentPage === "orders"     && <OrdersPage   onNavigate={navigate} />}
+          {currentPage === "orders"       && <OrdersPage      onNavigate={navigate} />}
+          {currentPage === "order-detail" && pageData && <OrderDetailPage order={pageData} onNavigate={navigate} />}
           {currentPage === "profile"    && <ProfilePage  onNavigate={navigate} />}
           {currentPage === "search"     && <SearchPage   query={searchQuery} onNavigate={navigate} />}
         </main>

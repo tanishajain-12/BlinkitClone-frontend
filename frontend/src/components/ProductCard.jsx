@@ -14,7 +14,7 @@ function resolveImage(img) {
   return `${BASE_URL}${img}`;
 }
 
-export default function ProductCard({ product, onProductClick }) {
+export default function ProductCard({ product, onProductClick, onNavigate }) {
   const { items, addToCart, updateQuantity } = useCart();
   const [imgLoaded, setImgLoaded]   = useState(false);
   const [imgError, setImgError]     = useState(false);
@@ -98,7 +98,7 @@ export default function ProductCard({ product, onProductClick }) {
               <span className="text-white text-sm font-bold w-5 text-center">{cartItem.quantity}</span>
               <button
                 className="w-7 h-7 flex items-center justify-center text-white hover:bg-green-600 transition-colors"
-                onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                onClick={async (e) => { e.stopPropagation(); const r = await addToCart(product); if (r?.needsLogin) onNavigate?.("login"); }}
               >
                 <Plus size={13} />
               </button>
@@ -106,7 +106,7 @@ export default function ProductCard({ product, onProductClick }) {
           ) : (
             <button
               className="w-8 h-8 flex items-center justify-center bg-green-50 border border-green-200 text-green-600 rounded-lg hover:bg-green-500 hover:text-white hover:border-green-500 transition-all duration-200 font-bold"
-              onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+              onClick={async (e) => { e.stopPropagation(); const r = await addToCart(product); if (r?.needsLogin) onNavigate?.("login"); }}
             >
               <Plus size={16} />
             </button>
