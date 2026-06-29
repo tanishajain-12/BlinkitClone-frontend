@@ -7,7 +7,7 @@ import {
   removeCartItem,
   clearCart    as apiClearCart,
 } from "../api/cartService.js";
-import { useAuth } from "./AuthContext.js";
+import { useAuth } from "./AuthContext.jsx";
 
 const CartContext = createContext(null);
 
