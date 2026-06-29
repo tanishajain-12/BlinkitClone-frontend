@@ -1,33 +1,34 @@
+// dotenv is loaded via "import dotenv/config" in server.js — first import in the app.
+// By the time this module is evaluated, all env vars are already populated.
 import { Sequelize } from "sequelize";
 
-// Note: dotenv is loaded once in server.js before this module is imported.
-// Initialize Sequelize with MySQL credentials from environment variables
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
   process.env.DB_PASSWORD,
   {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
+    host:    process.env.DB_HOST || "localhost",
+    port:    Number(process.env.DB_PORT) || 3306,
     dialect: "mysql",
-    logging: false, // Set to console.log to see SQL queries during development
+    logging: false,
     pool: {
-      max: 10,      // Maximum number of connections in pool
-      min: 0,       // Minimum number of connections in pool
-      acquire: 30000, // Max time (ms) to wait for a connection before throwing error
-      idle: 10000,  // Time (ms) a connection can sit idle before being released
+      max:     10,
+      min:     0,
+      acquire: 30000,
+      idle:    10000,
     },
   }
 );
 
-// Test the database connection
 export const connectDB = async () => {
   try {
     await sequelize.authenticate();
     console.log("✅ MySQL Database connected successfully.");
   } catch (error) {
+    // Print the full error so the exact cause is always visible in the terminal
     console.error("❌ Unable to connect to the database:", error.message);
-    process.exit(1); // Exit process if DB connection fails
+    console.error(error);
+    process.exit(1);
   }
 };
 
